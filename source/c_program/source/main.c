@@ -145,6 +145,14 @@ int parse_poly(void)
     sat_stack_push_string("{ 1 -1 0 }");
 */
 /*
+    sat_stack_push_string("{ 1 }");
+    sat_stack_push_string("{ 1 -0.9 0.25 0.225 }");
+*/
+/*
+    sat_stack_push_string("{ 1 0.3 }");
+    sat_stack_push_string("{ 1 -0.5 0.5 }");
+*/
+/*
     sat_stack_push_string("{ 1.0 3.5}");
     sat_stack_push_string("{ 1.0 -2.0 1.0 -2.0 }");
 */
@@ -455,6 +463,14 @@ void multiply_poly_regulator(double * coefs, int * degree, double a) // multiply
     for(i = 0; i < (1+*degree); i++) coefs[i] = new_coefs[i];
 }
 
+void multiply_poly_const(double * coefs, int degree, double k) // multiply coefs by k
+{
+    int i;
+    for(i = 0; i < (1+degree); i++) coefs[i] *= k;
+}
+
+//--------------------------------------------------------------
+
 int get_double(char * show_string, double * returned_value) //returns 1 if OK
 {
     char string[30+1];
@@ -517,7 +533,9 @@ int get_double(char * show_string, double * returned_value) //returns 1 if OK
 
 //--------------------------------------------------------------
 
-double get_x(double i) //i MUSTN'T BE 100.00 ( draw_paths => i < 100.00 )
+int SYSTEM_IS_CONTINOUS = 1;
+
+double get_x(double i) //i MUSTN'T BE 100.00 ( draw_paths uses i < 100.00 )
 {
     if(i < 50.0) return pow(i/50.0,2);
     return pow(1.0/(2.0-(i/50.0)),2);
@@ -530,7 +548,7 @@ int r_offset;
 void plot(double xx, double yy)
 {
     int x = xx*scale_factor+(double)r_offset;
-    int y = yy*scale_factor+((double)SCR_Y/2.0);
+    int y = -yy*scale_factor+((double)SCR_Y/2.0);
     if(x < 0 || x >= SCR_X) return;
     if(y < 0 || y >= SCR_Y) return;
     hpg_draw_pixel(x,y);
@@ -539,7 +557,7 @@ void plot(double xx, double yy)
 int test_plot(double xx, double yy)
 {
     int x = xx*scale_factor+(double)r_offset;
-    int y = yy*scale_factor+((double)SCR_Y/2.0);
+    int y = -yy*scale_factor+((double)SCR_Y/2.0);
     if(x < 0 || x >= SCR_X) return 0;
     if(y < 0 || y >= SCR_Y) return 0;
     return 1;
@@ -548,7 +566,7 @@ int test_plot(double xx, double yy)
 void plot_add(double xx, double yy, int xadd, int yadd)
 {
     int x = xx*scale_factor+(double)r_offset;
-    int y = yy*scale_factor+((double)SCR_Y/2.0);
+    int y = -yy*scale_factor+((double)SCR_Y/2.0);
     x+=xadd;
     y+=yadd;
     if(x < 0 || x >= SCR_X) return;
@@ -654,6 +672,14 @@ void draw_axes(void)
     increment /= 10.0;
 
     axes_scale = increment;
+
+    if(SYSTEM_IS_CONTINOUS == 0)
+    {
+        //Draw circle with radius = 1.0
+        double a, inc_circ = (M_PI*2.0)/(scale_factor*100.0);
+        for(a = 0.0; a < 2.0*M_PI; a += inc_circ)
+            plot(cos(a),sin(a));
+    }
 
     //X AXIS
     //------
@@ -799,6 +825,36 @@ void draw_paths(void)
     hpg_draw_text(str,0,0);
 }
 
+void ask_continous_system(void)
+{
+    while(keyb_isAnyKeyPressed()) sys_LCDSynch();
+
+    hpg_clear();
+    hpg_set_color(hpg_stdscreen,HPG_COLOR_BLACK);
+    hpg_draw_text("What's the type of the system?",0,0);
+    hpg_draw_text("1:Continous",0,16);
+    hpg_draw_text("2:Discrete",0,24);
+
+    while(1)
+    {
+        if(keyb_isKeyPressed(3,5)) //1
+        {
+            SYSTEM_IS_CONTINOUS = 1;
+            while(keyb_isAnyKeyPressed()) sys_LCDSynch();
+            hpg_clear();
+            return;
+        }
+        else if(keyb_isKeyPressed(2,5)) //2
+        {
+            SYSTEM_IS_CONTINOUS = 0;
+            while(keyb_isAnyKeyPressed()) sys_LCDSynch();
+            hpg_clear();
+            return;
+        }
+        sys_LCDSynch();
+    }
+}
+
 int regulator_added = 0;
 
 int add_regulator(void) //return 1 if changed
@@ -838,9 +894,18 @@ int add_regulator(void) //return 1 if changed
     hpg_clear();
     hpg_set_color(hpg_stdscreen,HPG_COLOR_BLACK);
     hpg_draw_text("Regulator type?",0,0);
-    hpg_draw_text("1:PI   R(s)=k(s+a)/s",0,16);
-    hpg_draw_text("2:PD   R(s)=k(s+b)",0,24);
-    hpg_draw_text("3:PID  R(s)=k(s+a)(s+b)/s",0,32);
+    if(SYSTEM_IS_CONTINOUS)
+    {
+        hpg_draw_text("1:PI   R(s)=k(s+a)/s",0,16);
+        hpg_draw_text("2:PD   R(s)=k(s+b)",0,24);
+        hpg_draw_text("3:PID  R(s)=k(s+a)(s+b)/s",0,32);
+    }
+    else
+    {
+        hpg_draw_text("1:PI   R(z)=k(2/T)(z-1)/(z+1)",0,16);
+        hpg_draw_text("2:PD   R(z)=k(z-1)/(Tz)",0,24);
+        hpg_draw_text("3:PID  R(z)=k(z+a)(z+b)/(z-1)z",0,32);
+    }
     hpg_draw_text("Change 'k': Press arrows while",0,48);
     hpg_draw_text("   you are in the graph.",0,56);
 
@@ -852,22 +917,46 @@ int add_regulator(void) //return 1 if changed
         {
             while(keyb_isAnyKeyPressed()) sys_LCDSynch();
 
-            double a;
-            if(get_double("Input value for 'a':",&a))
+            if(SYSTEM_IS_CONTINOUS)
             {
-                multiply_poly_regulator(num_coefs,&NUM_DEGREE,a);
-                multiply_poly_regulator(den_coefs,&DEN_DEGREE,0);
+                double a;
+                if(get_double("Input value for 'a':",&a))
+                {
+                    multiply_poly_regulator(num_coefs,&NUM_DEGREE,a);
+                    multiply_poly_regulator(den_coefs,&DEN_DEGREE,0);
 
-                hpg_clear();
-                hpg_draw_text("PI regulator added!",0,0);
-                hpg_draw_text("R(s)=k(s+a)/s",0,16);
-                sprintf(string,"a=%E",a);
-                hpg_draw_text(string,0,32);
+                    hpg_clear();
+                    hpg_draw_text("PI regulator added!",0,0);
+                    hpg_draw_text("R(s)=k(s+a)/s",0,16);
+                    sprintf(string,"a=%E",a);
+                    hpg_draw_text(string,0,32);
 
-                regulator_added = 1;
+                    regulator_added = 1;
 
-                while(!keyb_isAnyKeyPressed()) sys_LCDSynch();
-                while(keyb_isAnyKeyPressed()) sys_LCDSynch();
+                    while(!keyb_isAnyKeyPressed()) sys_LCDSynch();
+                    while(keyb_isAnyKeyPressed()) sys_LCDSynch();
+                }
+            }
+            else
+            {
+                double T;
+                if(get_double("Input value for 'T':",&T))
+                {
+                    multiply_poly_const(num_coefs,DEN_DEGREE,2.0/T);
+                    multiply_poly_regulator(num_coefs,&NUM_DEGREE,-1);
+                    multiply_poly_regulator(den_coefs,&DEN_DEGREE,1);
+
+                    hpg_clear();
+                    hpg_draw_text("PI regulator added!",0,0);
+                    hpg_draw_text("R(z)=k(2/T)(z-1)/(z+1)",0,16);
+                    sprintf(string,"T=%E",T);
+                    hpg_draw_text(string,0,32);
+
+                    regulator_added = 1;
+
+                    while(!keyb_isAnyKeyPressed()) sys_LCDSynch();
+                    while(keyb_isAnyKeyPressed()) sys_LCDSynch();
+                }
             }
             break;
         }
@@ -875,21 +964,45 @@ int add_regulator(void) //return 1 if changed
         {
             while(keyb_isAnyKeyPressed()) sys_LCDSynch();
 
-            double b;
-            if(get_double("Input value for 'b':",&b))
+            if(SYSTEM_IS_CONTINOUS)
             {
-                multiply_poly_regulator(num_coefs,&NUM_DEGREE,b);
+                double b;
+                if(get_double("Input value for 'b':",&b))
+                {
+                    multiply_poly_regulator(num_coefs,&NUM_DEGREE,b);
 
-                hpg_clear();
-                hpg_draw_text("PD regulator added!",0,0);
-                hpg_draw_text("R(s)=k(s+b)",0,16);
-                sprintf(string,"b=%E",b);
-                hpg_draw_text(string,0,32);
+                    hpg_clear();
+                    hpg_draw_text("PD regulator added!",0,0);
+                    hpg_draw_text("R(s)=k(s+b)",0,16);
+                    sprintf(string,"b=%E",b);
+                    hpg_draw_text(string,0,32);
 
-                regulator_added = 1;
+                    regulator_added = 1;
 
-                while(!keyb_isAnyKeyPressed()) sys_LCDSynch();
-                while(keyb_isAnyKeyPressed()) sys_LCDSynch();
+                    while(!keyb_isAnyKeyPressed()) sys_LCDSynch();
+                    while(keyb_isAnyKeyPressed()) sys_LCDSynch();
+                }
+            }
+            else
+            {
+                double T;
+                if(get_double("Input value for 'T':",&T))
+                {
+                    multiply_poly_regulator(num_coefs,&NUM_DEGREE,-1);
+                    multiply_poly_const(den_coefs,DEN_DEGREE,T);
+                    multiply_poly_regulator(den_coefs,&DEN_DEGREE,0);
+
+                    hpg_clear();
+                    hpg_draw_text("PD regulator added!",0,0);
+                    hpg_draw_text("R(z)=k(z-1)/(Tz)",0,16);
+                    sprintf(string,"T=%E",T);
+                    hpg_draw_text(string,0,32);
+
+                    regulator_added = 1;
+
+                    while(!keyb_isAnyKeyPressed()) sys_LCDSynch();
+                    while(keyb_isAnyKeyPressed()) sys_LCDSynch();
+                }
             }
             break;
         }
@@ -897,27 +1010,57 @@ int add_regulator(void) //return 1 if changed
         {
             while(keyb_isAnyKeyPressed()) sys_LCDSynch();
 
-            double a, b;
-            if(get_double("Input value for 'a':",&a))
+            if(SYSTEM_IS_CONTINOUS)
             {
-                if(get_double("Input value for 'b':",&b))
+                double a, b;
+                if(get_double("Input value for 'a':",&a))
                 {
-                    multiply_poly_regulator(num_coefs,&NUM_DEGREE,a);
-                    multiply_poly_regulator(num_coefs,&NUM_DEGREE,b);
-                    multiply_poly_regulator(den_coefs,&DEN_DEGREE,0);
+                    if(get_double("Input value for 'b':",&b))
+                    {
+                        multiply_poly_regulator(num_coefs,&NUM_DEGREE,a);
+                        multiply_poly_regulator(num_coefs,&NUM_DEGREE,b);
+                        multiply_poly_regulator(den_coefs,&DEN_DEGREE,0);
 
-                    hpg_clear();
-                    hpg_draw_text("PID regulator added!",0,0);
-                    hpg_draw_text("R(s)=k(s+a)(s+b)/s",0,16);
-                    sprintf(string,"a=%E",a);
-                    hpg_draw_text(string,0,32);
-                    sprintf(string,"b=%E",b);
-                    hpg_draw_text(string,0,40);
+                        hpg_clear();
+                        hpg_draw_text("PID regulator added!",0,0);
+                        hpg_draw_text("R(s)=k(s+a)(s+b)/s",0,16);
+                        sprintf(string,"a=%E",a);
+                        hpg_draw_text(string,0,32);
+                        sprintf(string,"b=%E",b);
+                        hpg_draw_text(string,0,40);
 
-                    regulator_added = 1;
+                        regulator_added = 1;
 
-                    while(!keyb_isAnyKeyPressed()) sys_LCDSynch();
-                    while(keyb_isAnyKeyPressed()) sys_LCDSynch();
+                        while(!keyb_isAnyKeyPressed()) sys_LCDSynch();
+                        while(keyb_isAnyKeyPressed()) sys_LCDSynch();
+                    }
+                }
+            }
+            else
+            {
+                double a, b;
+                if(get_double("Input value for 'a':",&a))
+                {
+                    if(get_double("Input value for 'b':",&b))
+                    {
+                        multiply_poly_regulator(num_coefs,&NUM_DEGREE,a);
+                        multiply_poly_regulator(num_coefs,&NUM_DEGREE,b);
+                        multiply_poly_regulator(den_coefs,&DEN_DEGREE,0);
+                        multiply_poly_regulator(den_coefs,&DEN_DEGREE,-1);
+
+                        hpg_clear();
+                        hpg_draw_text("PID regulator added!",0,0);
+                        hpg_draw_text("R(z)=k(z+a)(z+b)/(z-1)z",0,16);
+                        sprintf(string,"a=%E",a);
+                        hpg_draw_text(string,0,32);
+                        sprintf(string,"b=%E",b);
+                        hpg_draw_text(string,0,40);
+
+                        regulator_added = 1;
+
+                        while(!keyb_isAnyKeyPressed()) sys_LCDSynch();
+                        while(keyb_isAnyKeyPressed()) sys_LCDSynch();
+                    }
                 }
             }
             break;
@@ -947,6 +1090,40 @@ void draw_rlocus(void)
     sys_slowOn(); //Normal speed
 
     hpg_set_indicator(HPG_INDICATOR_WAIT,HPG_COLOR_WHITE);
+}
+
+void print_current_poles(void)
+{
+    while(keyb_isKeyPressed(0,6)) sys_LCDSynch();
+
+    hpg_clear();
+
+    int i;
+    double wr[MAX_DEGREE],wi[MAX_DEGREE];
+    char str[100];
+
+    int numr = solve_poly(COEFS,DEGREE,wr,wi);
+    int line = 0;
+    hpg_draw_text("Poles",0,0); hpg_draw_text("-----",0,6);
+    for(i=0; i<numr; i++)
+    {
+        sprintf(str,"%f + j %f\n",wr[i],wi[i]);
+        hpg_draw_text(str,0,12+6*line);
+        line++;
+        if(line == 11)
+        {
+            line = 0;
+            hpg_draw_text("(cont)",107,74);
+            while(!keyb_isAnyKeyPressed());
+            while(keyb_isAnyKeyPressed());
+            hpg_clear();
+            hpg_draw_text("Poles",0,0); hpg_draw_text("-----",0,6);
+        }
+    }
+
+    while(!keyb_isAnyKeyPressed());
+    while(keyb_isAnyKeyPressed());
+    hpg_clear();
 }
 
 void trace(void)
@@ -1017,7 +1194,14 @@ void trace(void)
                     plot_add(wr[i],wi[i],-1,0);
                     plot_add(wr[i],wi[i],-2,0);
 
-                    if(wr[i] >= 0.0) unstable = 1;
+                    if(SYSTEM_IS_CONTINOUS)
+                    {
+                        if(wr[i] >= 0.0) unstable = 1;
+                    }
+                    else
+                    {
+                        if( ((wr[i]*wr[i])+(wi[i]*wi[i])) >= 1.0) unstable = 1; //1.0^2 = 1.0
+                    }
                 }
 
                 if(isdrawn) //clear last poles
@@ -1049,6 +1233,66 @@ void trace(void)
                 hpg_draw_text(str,0,0);
 
                 isdrawn = 1;
+            }
+            else if(keyb_isKeyPressed(1,6)) //space - set k
+            {
+                double k_;
+                if(get_double("Input value for 'k':",&k_))
+                {
+                    hpg_blit(rlocus,0,0,SCR_X,SCR_Y,hpg_stdscreen,0,0);
+
+                    hpg_set_mode(hpg_stdscreen,HPG_MODE_XOR);
+                    hpg_set_color(hpg_stdscreen,HPG_COLOR_BLACK);
+
+                    double wr[MAX_DEGREE],wi[MAX_DEGREE];
+                    int i;
+
+                    multiply_poly_add(k_);
+
+                    int unstable = 0;
+
+                    int numr = solve_poly(COEFS,DEGREE,wr,wi);
+                    for(i = 0; i < numr; i++)
+                    {
+                        plot_add(wr[i],wi[i],0,0);
+                        plot_add(wr[i],wi[i],0,1);
+                        plot_add(wr[i],wi[i],0,2);
+                        plot_add(wr[i],wi[i],1,0);
+                        plot_add(wr[i],wi[i],2,0);
+                        plot_add(wr[i],wi[i],0,-1);
+                        plot_add(wr[i],wi[i],0,-2);
+                        plot_add(wr[i],wi[i],-1,0);
+                        plot_add(wr[i],wi[i],-2,0);
+
+                        if(SYSTEM_IS_CONTINOUS)
+                        {
+                            if(wr[i] >= 0.0) unstable = 1;
+                        }
+                        else
+                        {
+                            if( ((wr[i]*wr[i])+(wi[i]*wi[i])) >= 1.0) unstable = 1; //1.0^2 = 1.0
+                        }
+                    }
+
+                    hpg_set_mode(hpg_stdscreen,HPG_MODE_PAINT);
+                    char str[100];
+                    sprintf(str,"%c K=%f",unstable?'U':'S',k_);
+                    hpg_set_color(hpg_stdscreen,HPG_COLOR_WHITE);
+                    hpg_fill_rect(0,0,SCR_X-1,5);
+                    hpg_set_color(hpg_stdscreen,HPG_COLOR_GRAY_5);
+                    hpg_draw_line(0,6,SCR_X-1,6);
+                    hpg_set_color(hpg_stdscreen,HPG_COLOR_BLACK);
+                    hpg_draw_text(str,0,0);
+
+                    while(!keyb_isAnyKeyPressed());
+                    while(keyb_isAnyKeyPressed());
+
+                    print_current_poles();
+                }
+
+                isdrawn = 0;
+
+                hpg_blit(rlocus,0,0,SCR_X,SCR_Y,hpg_stdscreen,0,0);
             }
             else if(keyb_isKeyPressed(0,0)) //backspace - clear
             {
@@ -1082,38 +1326,9 @@ void trace(void)
             {
                 if(isdrawn)
                 {
-                    while(keyb_isKeyPressed(0,6)) sys_LCDSynch();
-
                     hpg_blit(hpg_stdscreen,0,0,SCR_X,SCR_Y,  tmp,0,0);
 
-                    hpg_clear();
-
-                    int i;
-                    double wr[MAX_DEGREE],wi[MAX_DEGREE];
-                    char str[100];
-
-                    int numr = solve_poly(COEFS,DEGREE,wr,wi);
-                    int line = 0;
-                    hpg_draw_text("Poles",0,0); hpg_draw_text("-----",0,6);
-                    for(i=0; i<numr; i++)
-                    {
-                        sprintf(str,"%f + j %f\n",wr[i],wi[i]);
-                        hpg_draw_text(str,0,12+6*line);
-                        line++;
-                        if(line == 11)
-                        {
-                            line = 0;
-                            hpg_draw_text("(cont)",107,74);
-                            while(!keyb_isAnyKeyPressed());
-                            while(keyb_isAnyKeyPressed());
-                            hpg_clear();
-                            hpg_draw_text("Poles",0,0); hpg_draw_text("-----",0,6);
-                        }
-                    }
-
-                    while(!keyb_isAnyKeyPressed());
-                    while(keyb_isAnyKeyPressed());
-                    hpg_clear();
+                    print_current_poles();
 
                     hpg_blit(tmp,0,0,SCR_X,SCR_Y,  hpg_stdscreen,0,0);
                 }
@@ -1138,7 +1353,10 @@ void print_coefs(void)
     hpg_draw_text("Numerator",0,0); hpg_draw_text("---------",0,6);
     for(i=0; i<=NUM_DEGREE; i++)
     {
-        sprintf(str,"s^%d %f\n",NUM_DEGREE - i, num_coefs[i]);
+        if(SYSTEM_IS_CONTINOUS)
+            sprintf(str,"s^%d %f\n",NUM_DEGREE - i, num_coefs[i]);
+        else
+            sprintf(str,"z^%d %f\n",NUM_DEGREE - i, num_coefs[i]);
         hpg_draw_text(str,0,12+6*line);
         line++;
         if(line == 11)
@@ -1161,7 +1379,10 @@ void print_coefs(void)
     hpg_draw_text("Denominator",0,0); hpg_draw_text("-----------",0,6);
     for(i=0; i<=DEN_DEGREE; i++)
     {
-        sprintf(str,"s^%d %f\n",DEN_DEGREE - i, den_coefs[i]);
+        if(SYSTEM_IS_CONTINOUS)
+            sprintf(str,"s^%d %f\n",DEN_DEGREE - i, den_coefs[i]);
+        else
+            sprintf(str,"z^%d %f\n",DEN_DEGREE - i, den_coefs[i]);
         hpg_draw_text(str,0,12+6*line);
         line++;
         if(line == 11)
@@ -1250,7 +1471,7 @@ int main()
     if(parse_poly() == 0)
     {
         hpg_set_color(hpg_stdscreen,HPG_COLOR_BLACK);
-        hpg_draw_text("Root Locus 0.2",37,5);
+        hpg_draw_text("Root Locus 0.3",37,5);
         hpg_draw_text("--------------",37,10);
         hpg_draw_text("by Antonio Nino Diaz",25,20);
 
@@ -1263,6 +1484,8 @@ int main()
         hpg_clear();
 
         hpg_set_color(hpg_stdscreen,HPG_COLOR_BLACK);
+
+        ask_continous_system();
 
         if(!keyb_isON())
         {
