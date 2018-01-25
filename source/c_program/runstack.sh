@@ -1,0 +1,2 @@
+./rlocus
+bash

@@ -1,0 +1,75 @@
+#################################################################################
+#File Name: README<2> 
+#Last Modification Date:        %G%     %U%
+#Current Version: %M%   %I%
+#File Creation Date: Thu Aug  4 07:44:02 1994 
+#Author: Markus Lang  <lang@jazz.rice.edu>  
+#
+#Copyright: All software, documentation, and related files in this distribution
+#           are Copyright (c) 1994  Rice University
+#
+#Permission is granted for use and non-profit distribution providing that this
+#notice be clearly maintained. The right to distribute any portion for profit
+#or as part of any commercial product is specifically reserved for the author.
+#
+#Change History:
+#
+#################################################################################
+DESCRIPTION:
+This software is for determination of polynomial roots (in C) and for 
+spectral factorization (in MATLAB).
+
+The main C routine is null.c. The required subroutines are contained in
+complex.c, muller.c, newton.c, and tools.c. The file rootsl.c is a 
+MATLAB (version 4) gateway file. The file rootsl.mex4 is an executable
+(on SUN workstations) mex file. To create a mex file for other machines 
+use the 'makefile' (might require some modifications). Please note
+that we use ANSI C. You may create a shell executable by the command 
+'gcc -ansi test.c null.c muller.c complex.c tools.c newton.c -lm'.
+
+The main (MATLAB) routine for spectral factorization is factorize.m.
+
+
+REFERENCES:
+  Markus Lang, Bernhard-Christian Frenzel. "Polynomial Root Finding". 
+    Accepted for IEEE Signal Processing Letters. 
+
+  Markus Lang. "A New and Efficient Program for Finding all Polynomial 
+    Roots". Technical Report 9308, Department of Electrical and Computer
+    Engineering, Rice University, Houston, TX, 1993. 
+
+EMAIL: 
+For bug reports and questions send email to lang@jazz.rice.edu
+
+CONDITIONS FOR USE:
+        This software is Copyright (c) 1992, 1993, 1994  LNT, University 
+        of Erlangen Nuernberg, FRG and Rice University, Houston, TX
+
+	You have the right to use, free of charge, with the following terms 
+        and conditions:
+
+      (1) You can redistribute this software in source form.  If you
+            redistribute this software in compiled form you will include
+            the source code.
+      (2) You can distribute your own applications that link this software
+            if you include the source code for this software.
+      (3) You own full rights to any output files you generate with this
+            software.
+      (4) You can make modifications to this software and use it for
+            in-house use only.  Under no circumstances can modified software
+            be redistributed.
+      (5) If you make any modifications to this software you will send
+            the changes by email to lang@jazz.rice.edu
+      (6) The LNT, at University of Erlangen Nuernberg, FRG, shall be 
+            credited should this software be used in in any form or 
+            written about in any publication.
+      (7) This software is provided "as is", without warranty by 
+            University of Erlangen Nuernberg and Rice University. In no 
+            event shall the University of Erlangen Nuernberg or the Rice
+            University be liable for any loss or for any indirect, 
+            special, punitive, exemplary, incidental, or consequential 
+            damages arising from the use, possession or performance of 
+            this software.
+
+
+

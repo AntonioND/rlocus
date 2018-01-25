@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="Release HP" />
+	<File name="source/PRF/complex.c" open="0" top="0" tabpos="0">
+		<Cursor position="3334" topLine="86" />
+	</File>
+	<File name="source/PRF/header.h" open="0" top="0" tabpos="0">
+		<Cursor position="2140" topLine="72" />
+	</File>
+	<File name="source/PRF/muller.c" open="0" top="0" tabpos="0">
+		<Cursor position="1797" topLine="128" />
+	</File>
+	<File name="source/PRF/newton.c" open="0" top="0" tabpos="0">
+		<Cursor position="1035" topLine="0" />
+	</File>
+	<File name="source/PRF/null.c" open="0" top="0" tabpos="0">
+		<Cursor position="4397" topLine="71" />
+	</File>
+	<File name="source/PRF/tools.c" open="0" top="0" tabpos="0">
+		<Cursor position="0" topLine="141" />
+	</File>
+	<File name="source/main.c" open="1" top="1" tabpos="1">
+		<Cursor position="3697" topLine="83" />
+	</File>
+</CodeBlocks_layout_file>
