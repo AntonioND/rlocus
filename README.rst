@@ -14,6 +14,8 @@ It has been hosted since 2012 here: https://www.hpcalc.org/details/7354
 
 .. image:: screen.gif
 
+My website: www.skylyrac.net
+
 **IMPORTANT NOTE**: This program was created with HP-GCC. That means that if it
 crashes there is no way to return to the HP menu by software means. In case that
 happens, just press the reset button (or remove a battery and put it back again
